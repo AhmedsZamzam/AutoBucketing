@@ -1,0 +1,94 @@
+import json
+import boto3
+from datetime import datetime
+from time import sleep
+import os
+
+def Bucketing(event, context):
+    
+    #get date and hour
+    now = datetime.now()
+    hour = int(now.strftime("%H")) - 1
+    date = now.strftime("%Y-%m-%d-")
+    dt = "%s%i" % (date,hour)
+    
+    # athena client
+    client = boto3.client('athena')    
+    
+    # athena settings
+    database = os.environ['DATABASE']
+    athena_result_bucket = os.environ['ATHENA_QUERY_RESULTS_LOCATION']
+    SourceTable = os.environ['SOURCE_TABLE']
+    TargetTable = os.environ['TARGET_TABLE']
+    TargetTableLocation = os.environ['TARGET_TABLE_LOCATION']
+    
+    # Create temp table
+    CTASQuery = """
+    CREATE TABLE TempTable
+    WITH (
+      format = 'PARQUET', 
+      external_location = '%s/dt=%s/', 
+      bucketed_by = ARRAY['sensorID'], 
+      bucket_count = 3) 
+    AS SELECT *
+    FROM %s
+    WHERE dt='%s';
+    """ % (TargetTableLocation,dt,SourceTable,dt)
+    
+    # execute first query to create previous hour table 
+    CTASresponse = client.start_query_execution(
+        QueryString=CTASQuery,
+        QueryExecutionContext={
+           'Database': database
+        },
+        ResultConfiguration={
+            'OutputLocation': athena_result_bucket,
+        }
+    )
+    query_execution_id = CTASresponse["QueryExecutionId"]
+    query_status = client.get_query_execution(QueryExecutionId=query_execution_id)
+    query_execution_status = query_status["QueryExecution"]["Status"]["State"]
+    
+    # wait for first query to be executed successfully before executing second query
+    while True:
+        if query_execution_status == 'SUCCEEDED':
+            print ("Loading Partitions")
+            LoadPartionQuery="""
+                ALTER TABLE %s
+                ADD IF NOT EXISTS
+                PARTITION (
+                    dt='%s'
+                );
+                """ % (TargetTable,dt)
+            LoadPartitionresponse = client.start_query_execution(
+            QueryString=LoadPartionQuery,
+            QueryExecutionContext={
+                'Database': database
+            },
+            ResultConfiguration={
+                'OutputLocation': athena_result_bucket,
+            }
+            )
+            break
+        
+        if query_execution_status == 'FAILED':
+            raise Exception("STATUS:" + query_execution_status)
+            
+        print (query_execution_status)
+       # Sleep 10 ms to avoid throttling
+        sleep(0.1)
+        
+        query_status = client.get_query_execution(QueryExecutionId=query_execution_id)
+        query_execution_status = query_status["QueryExecution"]["Status"]["State"]
+
+    # Drop temp table  
+    DropTableQuery="DROP TABLE TempTable;"
+    response = client.start_query_execution(
+    QueryString=DropTableQuery,
+    QueryExecutionContext={
+        'Database': database
+    },
+    ResultConfiguration={
+        'OutputLocation': athena_result_bucket,
+    }
+    )
