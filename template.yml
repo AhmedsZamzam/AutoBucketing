@@ -17,8 +17,8 @@ Parameters:
     Default: '/curated'
     ConstraintDescription: '[A-Za-z0-9\-]+/'
     Description: >
-        Prefix of new bucketed files that are written by Function2 .
-        Including the trailing slash.
+        Prefix of new bucketed files that are written by Function2. This is the location of TargetTable without 's://<s3_bucket_name>' 
+        Without the trailing slash. For example, /curated
   AthenaResultLocation: 
     Type: String
     ConstraintDescription: '[A-Za-z0-9\-]+/'
@@ -30,7 +30,7 @@ Parameters:
     Default: 'mydatabase'
     ConstraintDescription: '[A-Za-z0-9_]+/'
     Description: >
-        Database name that holds SourceTable and TargetTable
+        Data Catalog Database name that holds SourceTable and TargetTable
   SourceTableName: 
     Type: String
     Default: 'SourceTable'
@@ -43,6 +43,20 @@ Parameters:
     ConstraintDescription: '[A-Za-z0-9_]+/'
     Description: >
         Target Table name that points to curated data 
+  BucketingKey:
+    Type: String
+    Default: 'TargetTable'
+    ConstraintDescription: '[A-Za-z0-9_]+/'
+    Description: >
+        Column used as a Bucketing Key.
+  BucketCount:
+    Type: Number
+    Default: 3
+    ConstraintDescription: '[0-9]+/'
+    Description: >
+        Number of hive buckets to create within a partition. 
+        This has to be the same number that was used when creating TargetTable.
+
 Resources:
     BucketingFn:
         Type: AWS::Serverless::Function
@@ -88,6 +102,8 @@ Resources:
                     TARGET_TABLE_LOCATION: !Sub s3://${S3BucketName}${CuratedKeyPrefix}
                     DATABASE: !Ref DatabaseName
                     ATHENA_QUERY_RESULTS_LOCATION: !Ref AthenaResultLocation
+                    BUCKETING_KEY: !Ref  BucketingKey
+                    BUCKET_COUNT: !Ref  BucketCount
             Events:
               HourlyEvt:
                 Type: Schedule

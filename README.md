@@ -5,7 +5,7 @@ This repository accompanies the Automate Bucketing of Streaming Data using Amazo
 
 The [first function](./functions/LoadPartition.py), runs every hour and reads the new folder created under /raw folder and loads this folder as a new partition to the SourceTable. 
 
-The [second function](./functions/LoadPartition.py), runs every hour and copies the data from /raw to /curated using Create Table AS Select (CTAS)  
+The [second function](./functions/Bucketing.py), runs every hour and copies previous hour's data from /raw to /curated using Create Table AS Select (CTAS). The copied data is a new sub-folder under /curated. The function will then load the new folder as a Partition to TargetTable.  
 
 ```bash
 ├── README.MD <-- This instructions file
@@ -20,6 +20,8 @@ The [second function](./functions/LoadPartition.py), runs every hour and copies 
   
 
 * AWS CLI already configured with Administrator permission
+* Source and target tables created in Athena
+* Streaming data is writing into Amazon S3 bucket and partitioned like this: dt=YYYY-mm-dd-HH
 
 
 
@@ -27,18 +29,13 @@ The [second function](./functions/LoadPartition.py), runs every hour and copies 
 
 ## Installation Instructions
 
-  
-
-1.  [Create an AWS account](https://portal.aws.amazon.com/gp/aws/developer/registration/index.html) if you do not already have one and login.
-
-  
-
+1. [Install SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) if you do not have it.
 2. Clone the repo onto your local development machine using `git clone`.
-3.  Install SAM CLI
+3.  The lambda functions included here work on data that is partitioned on hourly basis. It will work with flat partition strategy that looks like the following; dt=YYYY-mm-dd-HH. If your data has a different structure, edit the lambda functions accordingly.
 
 
   
-4. From the command line, change directory into v1 or v2 depending on the version required, then run:
+4. From the command line, change directory to SAM template directory
 
 ```
 
@@ -56,7 +53,15 @@ Follow the prompts in the deploy process to set the stack name, AWS Region and o
 
   
 
-* InputBucketName: the unique name of a new S3 bucket for this application (bucket names must be lowercase only and globally unique across AWS).
+* S3BucketName: the name of data lake S3 bucket for this application 
+* CuratedKeyPrefix: Prefix of new bucketed files that are written by Function2. This is the location of TargetTable without 's://<s3_bucket_name>' 
+**Without the trailing slash**. For example, /curated
+* AthenaResultLocation: Full S3 location where Athena will store query results in. For example, s3://<s3_bucket_name>/athena_results
+* DatabaseName: Data Catalog Database name that holds SourceTable and TargetTable
+* SourceTableName: Source Table Name that points to raw data
+* TargetTableName: Target Table name that points to curated data
+* BucketingKey: The column used as a bucketing key. The solution supports a single bucketing key, to add more edit the lambda function.
+* BucketCount: Number of hive buckets to create within a partition. This has to be the same number that was used when creating TargetTable.
 
   
 
@@ -64,11 +69,12 @@ Follow the prompts in the deploy process to set the stack name, AWS Region and o
 
   
 
-* Upload a JSON file (a JSON array ending with .json) to the target S3 bucket.
+* Start writing streaming data to S3 bucket
+* Create SourceTable and TargetTable in Athena
 
-* After a few seconds you will see the contents imported into a DynamoDB table created by the SAM deploment.
+* After an hour of the SAM deployment, you will see new data written ***CuratedKeyPrefix***. The data will be bucketed and could be queried from TargetTable in Athena.
 
-* This process uses on-demand provisioning in DynamoDB.
+
 
   
 
