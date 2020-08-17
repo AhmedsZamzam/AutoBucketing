@@ -4,7 +4,7 @@ from datetime import datetime
 from time import sleep
 import os
 
-def Bucketing(event, context):
+def lambda_handler(event, context):
     
     #get date and hour
     now = datetime.now()
@@ -31,7 +31,7 @@ def Bucketing(event, context):
       format = 'PARQUET', 
       external_location = '%s/dt=%s/', 
       bucketed_by = ARRAY['%s'], 
-      bucket_count = %i) 
+      bucket_count = %s) 
     AS SELECT *
     FROM %s
     WHERE dt='%s';

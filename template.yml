@@ -9,7 +9,7 @@ Description: >
 Parameters:
   S3BucketName: 
     Type: String
-    ConstraintDescription: '[a-z0-9\-]+/'
+    ConstraintDescription: '[a-z0-9\-]+'
     Description: >
         S3 bucket name that will hold /raw and /curated folders
   CuratedKeyPrefix: 
@@ -28,31 +28,31 @@ Parameters:
   DatabaseName: 
     Type: String
     Default: 'mydatabase'
-    ConstraintDescription: '[A-Za-z0-9_]+/'
+    ConstraintDescription: '[A-Za-z0-9_]+'
     Description: >
         Data Catalog Database name that holds SourceTable and TargetTable
   SourceTableName: 
     Type: String
     Default: 'SourceTable'
-    ConstraintDescription: '[A-Za-z0-9_]+/'
+    ConstraintDescription: '[A-Za-z0-9_]+'
     Description: >
         Source Table Name that points to raw data
   TargetTableName: 
     Type: String
     Default: 'TargetTable'
-    ConstraintDescription: '[A-Za-z0-9_]+/'
+    ConstraintDescription: '[A-Za-z0-9_]+'
     Description: >
         Target Table name that points to curated data 
   BucketingKey:
     Type: String
-    Default: 'TargetTable'
-    ConstraintDescription: '[A-Za-z0-9_]+/'
+    Default: 'sensorID'
+    ConstraintDescription: '[A-Za-z0-9_]+'
     Description: >
-        Column used as a Bucketing Key.
+        The column used as a bucketing key. The solution  supports a single bucketing key, to add more edit the lambda function.
   BucketCount:
     Type: Number
     Default: 3
-    ConstraintDescription: '[0-9]+/'
+    ConstraintDescription: '[0-9]+'
     Description: >
         Number of hive buckets to create within a partition. 
         This has to be the same number that was used when creating TargetTable.
