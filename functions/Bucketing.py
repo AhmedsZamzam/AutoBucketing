@@ -1,16 +1,14 @@
 import json
 import boto3
-from datetime import datetime
+import datetime
 from time import sleep
 import os
 
 def lambda_handler(event, context):
     
-    #get date and hour
-    now = datetime.now()
-    hour = int(now.strftime("%H")) - 1
-    date = now.strftime("%Y-%m-%d-")
-    dt = "%s%i" % (date,hour)
+    #get current date and last hour
+    last_hour = datetime.datetime.now() - datetime.timedelta(hours = 1)
+    dt = last_hour.strftime("%Y-%m-%d-%H")
     
     # athena client
     client = boto3.client('athena')    
