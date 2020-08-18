@@ -54,7 +54,7 @@ Follow the prompts in the deploy process to set the stack name, AWS Region and o
   
 
 * S3BucketName: the name of data lake S3 bucket for this application 
-* CuratedKeyPrefix: Prefix of new bucketed files that are written by Function2. This is the location of TargetTable without 's://<s3_bucket_name>' 
+* CuratedKeyPrefix: Prefix of new bucketed files that are written by Function2. This is the Amazon S3 location of TargetTable without 's://<s3_bucket_name>' 
 **Without the trailing slash**. For example, /curated
 * AthenaResultLocation: Full S3 location where Athena will store query results in. For example, s3://<s3_bucket_name>/athena_results
 * DatabaseName: Data Catalog Database name that holds SourceTable and TargetTable
