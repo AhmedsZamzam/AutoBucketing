@@ -5,10 +5,9 @@ import os
 
 def lambda_handler(event, context):
     
-    #get date and hour
+    #get current date and hour
     now = datetime.now()
     dt = now.strftime("%Y-%m-%d-%H")
-    print (dt)
     
     # athena client
     client = boto3.client('athena')    
